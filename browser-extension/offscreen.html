@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>PassM clipboard</title>
+  </head>
+  <body>
+    <!--
+      Hidden document that exists only so the extension has a DOM to write to the
+      clipboard with. It renders nothing and is closed as soon as the write and
+      its scheduled clear are done.
+    -->
+    <script type="module" src="/src/offscreen/clipboard.ts"></script>
+  </body>
+</html>

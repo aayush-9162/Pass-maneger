@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    /**
+     * DOM is included for the `./crypto` entry point, which needs WebCrypto and
+     * text-encoding types. Only that subpath may use web APIs - the root entry
+     * must stay runtime-agnostic so the backend can import it under Node.
+     */
+    "lib": ["ES2022", "DOM"],
+    "moduleResolution": "Node",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "exactOptionalPropertyTypes": false,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+
+    /* Overridden by tsconfig.cjs.json / tsconfig.esm.json. */
+    "module": "CommonJS",
+    "outDir": "dist/cjs"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

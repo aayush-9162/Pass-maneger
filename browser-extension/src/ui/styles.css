@@ -1,0 +1,880 @@
+/**
+ * Styles shared by the popup and the side panel.
+ *
+ * Hand-written CSS rather than Tailwind: these are two small surfaces, and a
+ * build-time CSS pipeline would add tooling for no benefit. Variable names
+ * mirror the web console's tokens so the three surfaces read as one product.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #fcfcfe;
+  --fg: #0f172a;
+  --muted: #64748b;
+  --border: #e4e6f1;
+  --surface: #f3f4fb;
+  /* The console's identity: indigo into violet. */
+  --accent: #6366f1;
+  --accent-2: #8b5cf6;
+  --grad: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --primary: var(--accent);
+  --primary-fg: #ffffff;
+  --danger: #dc2626;
+  --success: #15803d;
+  --warning: #b45309;
+  --radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1020;
+    --fg: #e2e8f0;
+    --muted: #94a3b8;
+    --border: #232b45;
+    --surface: #141b33;
+    --accent: #818cf8;
+    --accent-2: #a78bfa;
+    --primary: var(--accent);
+    --primary-fg: #0f172a;
+    --danger: #f87171;
+    --success: #4ade80;
+    --warning: #fbbf24;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/*
+ * The popup has a fixed width; the side panel fills whatever Chrome gives it.
+ *
+ * `min-width` on the bare `body` is the safety net. A Chrome popup sizes itself
+ * to its content and has no viewport to fall back on, so if the `popup` class is
+ * ever missing from the HTML the window collapses to a sliver a few characters
+ * wide - which is exactly what happened once. The floor means the worst case is
+ * a popup that is merely narrow rather than unusable.
+ *
+ * `max-height` matches the 600px ceiling Chrome imposes on popups. Declaring it
+ * means our own scroll container handles the overflow, instead of Chrome
+ * clipping the content at an arbitrary point.
+ */
+body {
+  min-width: 320px;
+}
+
+body.popup {
+  /*
+   * 420 x 560. Chrome caps a popup at 800x600, so this takes most of the height
+   * available - a list that shows eight entries without scrolling beats one that
+   * shows three and makes people scroll for the thing they came to click.
+   */
+  width: 420px;
+  min-height: 560px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+body.sidepanel {
+  /* The side panel is resizable, so it gets a floor and no ceiling. */
+  min-width: 280px;
+  width: auto;
+  max-height: none;
+}
+
+/*
+ * Full view: the popup opened as a real browser tab (`popup.html?view=full`).
+ *
+ * Same markup, room to breathe: a centred column instead of a 420px sliver,
+ * with the surrounding page tinted so the column reads as a card.
+ */
+body.fullview {
+  width: auto;
+  min-height: 100vh;
+  max-height: none;
+  overflow-y: auto;
+  background:
+    radial-gradient(60rem 30rem at 80% -10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent),
+    var(--surface);
+}
+
+body.fullview .app {
+  max-width: 780px;
+  margin: 0 auto;
+  min-height: 100vh;
+  background: var(--bg);
+  border-inline: 1px solid var(--border);
+  box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+body.fullview .header {
+  padding: 18px 24px;
+}
+
+body.fullview .content {
+  padding: 20px 24px;
+  gap: 14px;
+}
+
+body.fullview .tabs {
+  padding: 12px 24px 6px;
+}
+
+body.fullview .item-main {
+  padding: 13px 6px 13px 13px;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 560px;
+}
+
+/* --- Header ---------------------------------------------------------------- */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 2;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.brand-mark {
+  display: block;
+  width: 30px;
+  height: 30px;
+}
+
+.header-side {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.expand-btn {
+  flex: 0 0 auto;
+}
+
+.brand {
+  font-size: 15px;
+}
+
+.identity {
+  min-width: 0;
+  text-align: right;
+  line-height: 1.3;
+}
+
+.identity strong {
+  display: block;
+  font-size: 12px;
+}
+
+.identity span {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 170px;
+}
+
+/* --- Layout ---------------------------------------------------------------- */
+.content {
+  flex: 1;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+label {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+input[type='number'],
+input[type='search'] {
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+input:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+input[type='search'] {
+  border-radius: 999px;
+  padding-inline: 14px;
+  background: var(--surface);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.checkbox-row label {
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* --- Buttons --------------------------------------------------------------- */
+button {
+  font: inherit;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--grad);
+  color: #ffffff;
+  font-weight: 550;
+  width: 100%;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  filter: brightness(1.06);
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--fg);
+  border-color: var(--border);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-row > button {
+  flex: 1;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.icon-btn:hover {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--fg);
+}
+
+/* --- Feedback -------------------------------------------------------------- */
+.alert {
+  padding: 9px 11px;
+  border-radius: var(--radius);
+  font-size: 12px;
+  line-height: 1.45;
+  border: 1px solid;
+}
+
+.alert-error {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+}
+
+.alert-success {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+}
+
+.alert-warning {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
+}
+
+.empty {
+  padding: 26px 12px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.loading {
+  display: grid;
+  place-items: center;
+  flex: 1;
+  color: var(--muted);
+  font-size: 13px;
+  padding: 30px 0;
+}
+
+/* --- Item list ------------------------------------------------------------- */
+.item-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/*
+ * A row is a single button.
+ *
+ * The whole row is the click target rather than a small icon inside it - the
+ * action is "sign me in", and making people aim at a 28px glyph for the thing
+ * they came to do was the main problem with the previous layout.
+ */
+.item {
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.item:hover {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+.item-main {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  flex: 1;
+  min-width: 0;
+  padding: 11px 4px 11px 11px;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.item-main:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.item-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.item-name {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 550;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: var(--grad);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.item:hover .item-mark {
+  /* A small lift on hover, so the row reads as one object rather than parts. */
+  transform: scale(1.04);
+  transition: transform 120ms ease;
+}
+
+/* A real site logo sits on a quiet tile; the gradient is the fallback's. */
+.item-mark.has-icon {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.item-mark img {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
+/*
+ * The action label.
+ *
+ * Hidden until the row is hovered or focused, so a list of ten entries reads as
+ * ten names rather than ten buttons - but always visible for an entry that
+ * cannot be filled, because that is information rather than an affordance.
+ */
+.item-go {
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent, var(--fg));
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.item-main:hover .item-go,
+.item-main:focus-visible .item-go {
+  opacity: 1;
+}
+
+/*
+ * The star.
+ *
+ * Dim until hovered, solid once set - so a list of unstarred entries is not a
+ * column of competing icons, but a starred one is obvious at a glance.
+ */
+.star-btn {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  margin-right: 6px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--muted);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 120ms ease, color 120ms ease;
+}
+
+.item:hover .star-btn,
+.star-btn:focus-visible {
+  opacity: 1;
+}
+
+.star-btn:hover {
+  color: var(--warning);
+  background: var(--bg);
+}
+
+/* A set star stays visible whether or not the row is hovered. */
+.star-on,
+.item .star-on {
+  opacity: 1;
+  color: var(--warning);
+}
+
+.item-locked {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Always show the "hidden" label - it explains, rather than invites. */
+.item-go:has(.item-locked) {
+  opacity: 1;
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--fg);
+  border-radius: 50%;
+  animation: passm-spin 700ms linear infinite;
+}
+
+@keyframes passm-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The header refresh icon while a sync is in flight. */
+.spin {
+  animation: passm-spin 700ms linear infinite;
+}
+
+.star {
+  color: var(--warning);
+}
+
+/* --- Tabs ------------------------------------------------------------------ */
+/* Pills, matching the console's top bar: the active one wears the gradient. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 10px 14px 4px;
+}
+
+.tab {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.tab:hover {
+  background: var(--surface);
+  color: var(--fg);
+}
+
+.tab[aria-selected='true'] {
+  background: var(--grad);
+  color: #ffffff;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+/* --- Generator ------------------------------------------------------------- */
+.generated {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.generated code {
+  flex: 1;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 12.5px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.strength {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.strength-weak {
+  color: var(--danger);
+}
+
+.strength-fair {
+  color: var(--warning);
+}
+
+.strength-good,
+.strength-strong {
+  color: var(--success);
+}
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+}
+
+/* --- Footer ---------------------------------------------------------------- */
+.footer {
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  gap: 8px;
+}
+
+/* --- Sign-in screen -------------------------------------------------------- */
+.signin {
+  justify-content: center;
+  align-items: center;
+  padding: 28px 22px;
+  gap: 18px;
+}
+
+.signin-card {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.signin-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.signin-logo {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 10px 24px rgb(37 99 235 / 0.35));
+}
+
+.signin-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.signin-sub {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/*
+ * Google's own button style: white, grey outline, the four-colour "G". A
+ * recognisable Google button is what people trust.
+ */
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  background: #ffffff;
+  color: #1f1f1f;
+  border: 1px solid #747775;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition:
+    background-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn-google:not(:disabled):hover {
+  background: #f8f9fa;
+  box-shadow: 0 1px 3px rgb(60 64 67 / 0.3);
+}
+
+.btn-google:focus-visible {
+  outline: 2px solid #4285f4;
+  outline-offset: 2px;
+}
+
+.btn-google:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.btn-google .spinner {
+  width: 16px;
+  height: 16px;
+  border-color: #dadce0;
+  border-top-color: #4285f4;
+}
+
+.google-mark {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+@media (prefers-color-scheme: dark) {
+  /* White stays white on the dark theme: it is the one thing to press here. */
+  .btn-google {
+    border-color: transparent;
+    box-shadow: 0 6px 18px rgb(0 0 0 / 0.35);
+  }
+
+  .btn-google:not(:disabled):hover {
+    background: #eef2ff;
+    box-shadow: 0 8px 22px rgb(0 0 0 / 0.45);
+  }
+}
+
+.signin-remember {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  font-weight: 400;
+}
+
+.signin-remember input {
+  margin: 2px 0 0;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.signin-remember > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.signin-remember-title {
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.signin-remember-hint {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.signin-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  max-width: 340px;
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.signin-note-icon {
+  width: 13px;
+  height: 13px;
+  margin-top: 2px;
+  flex: 0 0 auto;
+}
+
+/*
+ * The server address in the footer: plain text, nothing suggesting it can be
+ * clicked. A triple click opens the editor (see ServerAddress).
+ */
+.server-label {
+  font-size: 10px;
+  color: var(--muted);
+  opacity: 0.75;
+  cursor: default;
+  user-select: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.server-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.server-edit input {
+  flex: 1;
+  min-width: 140px;
+  padding: 3px 6px;
+  font-size: 11px;
+}
+
+.server-msg {
+  flex-basis: 100%;
+  font-size: 11px;
+}
+
+.server-msg-error {
+  color: var(--danger);
+}

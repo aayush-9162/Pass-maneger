@@ -1,0 +1,93 @@
+{
+  "manifest_version": 3,
+
+  "_comment_key": "Pins the extension ID to fllkfipajdahciclfcimfcenmfallgfm on every machine. Without it Chrome assigns a random id to each unpacked install, which would mean a separate CORS_ALLOW_EXTENSION_ORIGINS entry for every laptop in the company. The matching private key is extension-key.pem - keep it out of git, back it up, and reuse it when packing. Losing it means a new id and re-authorising the API.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAylq8TY6SqxTuzDap31pr/Ps5937mmdxXijMb8A4SRb/iDBjxfKnGS07PK2OnHWEcmGLVQZbDeBFB5WWTDpHDHi9NtWTNl+3jpnR5EelpfhKx8xKZsnQAnJKnBIkZiWLOFbUg0XV42W0K/N2tleThpbYkpLpe4tDJOJmcXMBS12o6KwEIHWNDA+UMNIJQ90b92ClKkwYCDcRY1frnVTExJpvd/S8+ZYOpGN4M+cX/pEr/QH1gEHaFlqgphJb2adF1ghN0PNp3nfO9Bnn3nvtJWfqNpraZON4C+eFglUilpEdRVWgoUAp0h/tFU2A8isTVzajIDNsuD1EdohdfRBd5/wIDAQAB",
+  "name": "PassM - Internal Password Manager",
+  "short_name": "PassM",
+  "version": "2.0.0",
+  "description": "Internal company password manager. Fill and save credentials, search your vault and generate strong passwords.",
+
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+
+  "minimum_chrome_version": "114",
+
+  "action": {
+    "default_title": "PassM",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    },
+    "default_popup": "popup.html"
+  },
+
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": [
+        "https://ntp.msn.com/*",
+        "https://www.msn.com/*/ntp*",
+        "https://*.newtabpage.com/*",
+        "https://www.bing.com/chat*",
+        "https://chrome.google.com/webstore/*",
+        "https://chromewebstore.google.com/*",
+        "https://microsoftedge.microsoft.com/addons/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle",
+      "all_frames": true,
+      "match_about_blank": false
+    }
+  ],
+
+  "permissions": [
+    "storage",
+    "alarms",
+    "activeTab",
+    "scripting",
+    "contextMenus",
+    "sidePanel",
+    "clipboardWrite",
+    "offscreen",
+    "tabs",
+    "identity"
+  ],
+
+  "host_permissions": ["http://localhost:4000/*"],
+  "optional_host_permissions": ["http://*/*", "https://*/*"],
+
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'; frame-ancestors 'none'"
+  },
+
+  "_comment_permissions": {
+    "storage": "The item index (names, usernames, sites - never passwords) lives in chrome.storage.session, which is memory-backed and never written to disk. Sign-in tokens and settings use chrome.storage.local.",
+    "alarms": "Proactive token refresh, vault auto-lock and clipboard auto-clear, all of which must survive the service worker being suspended.",
+    "activeTab + scripting": "Fill a credential into the tab the user is looking at, only after they act.",
+    "contextMenus": "Right-click menu for filling, copying and generating.",
+    "sidePanel": "Full vault browser alongside the page.",
+    "clipboardWrite": "Copy a password, then overwrite it after the configured delay.",
+    "offscreen": "A service worker has no DOM and cannot reach the clipboard at all. A short-lived offscreen document performs the copy and the later auto-clear, then closes.",
+    "tabs": "Read the active tab's URL to match vault entries to the site. Not used to track browsing - nothing is transmitted.",
+    "identity": "Sign in with Google. Opens Google's own sign-in window (launchWebAuthFlow) and receives the ID token at https://<extension-id>.chromiumapp.org/, which must be an authorised redirect URI on the OAuth client. No Google data is read beyond the sign-in token.",
+    "host_permissions": "The PassM API origin ONLY. Deliberately not a wildcard. Replaced at build time with the origin of VITE_API_URL, so the two always match.",
+    "optional_host_permissions": "Lets the user point the extension at a different PassM server (its IP changed). Nothing is granted at install; Chrome asks for the one origin the user saves, and the old one is released.",
+    "exclude_matches": "The browser new-tab pages and the extension stores. There is never a login form to fill on any of them, and injecting there only produced console noise - the new-tab document forbids some APIs by Permissions-Policy. Excluding them is both quieter and less surface.",
+    "content_scripts_all_frames": "Login forms are frequently inside an iframe (Microsoft and Amazon both do this), so the detector has to run in child frames too."
+  }
+}

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Internal enterprise password manager. Authorised company use only." />
+    <!-- An internal tool must never be indexed, even if it is briefly reachable. -->
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <!-- Origin only, never a path, to other sites. Not no-referrer: Google's sign-in button needs the origin. -->
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220" />
+    <title>PassM - Internal Password Manager</title>
+    <!--
+      Applies the stored theme before the first paint, so a dark-mode user does
+      not get a flash of white on every load. A classic (non-module) script so it
+      runs synchronously, ahead of the bundle - and a file rather than inline so
+      the CSP can forbid inline script outright.
+    -->
+    <script src="/theme-init.js"></script>
+  </head>
+  <body class="min-h-screen bg-background font-sans">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

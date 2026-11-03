@@ -1,4 +1,63 @@
+# ---------------------------------------------------------------------------
+# Dependencies
+# ---------------------------------------------------------------------------
 node_modules/
+.pnp
+.pnp.js
+
+# ---------------------------------------------------------------------------
+# Build output
+# ---------------------------------------------------------------------------
 dist/
+build/
+out/
+.next/
+*.tsbuildinfo
+browser-extension/dist/
+
+# ---------------------------------------------------------------------------
+# Secrets / environment - NEVER commit real secrets
+# ---------------------------------------------------------------------------
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.p12
+certs/
+secrets/
+
+# ---------------------------------------------------------------------------
+# Logs & runtime
+# ---------------------------------------------------------------------------
+logs/
 *.log
+npm-debug.log*
+yarn-error.log*
+pids/
+*.pid
+.pm2/
+
+# ---------------------------------------------------------------------------
+# Test / coverage
+# ---------------------------------------------------------------------------
+coverage/
+.nyc_output/
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# Extension signing key. Pins the extension id so one CORS entry covers
+# every install. Secret: whoever holds it can publish an extension that
+# Chrome treats as this one.
+browser-extension/extension-key.pem
+browser-extension/extkey.json

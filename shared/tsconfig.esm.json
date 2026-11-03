@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "outDir": "dist/esm",
+    /* Type declarations are emitted once, by the CJS build, and referenced from
+       package.json#exports.types - no need to duplicate them here. */
+    "declaration": false,
+    "declarationMap": false
+  }
+}

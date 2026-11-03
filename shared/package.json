@@ -1,0 +1,35 @@
+{
+  "name": "@passm/shared",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared TypeScript contracts (types, DTO shapes, roles, permissions, error codes) used by every PassM package",
+  "license": "UNLICENSED",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/cjs/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run build:cjs && npm run build:esm && npm run build:esm-marker",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:esm-marker": "node -e \"require('fs').writeFileSync('dist/esm/package.json', JSON.stringify({type:'module'},null,2))\"",
+    "dev": "tsc -p tsconfig.cjs.json --watch",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

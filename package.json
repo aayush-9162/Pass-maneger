@@ -1,0 +1,34 @@
+{
+  "name": "passm-enterprise-password-manager",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise password manager (internal company use only) - backend, frontend, browser extension and shared contracts",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.22.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend",
+    "browser-extension"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace @passm/shared",
+    "build:backend": "npm run build --workspace @passm/backend",
+    "build:frontend": "npm run build --workspace @passm/frontend",
+    "build:extension": "npm run build --workspace @passm/browser-extension",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend && npm run build:extension",
+    "build:web": "npm run build --workspace @passm/frontend",
+    "build:lan": "npm run build:shared && npm run build:backend && npm run build:web",
+    "dev:backend": "npm run dev --workspace @passm/backend",
+    "dev:frontend": "npm run dev --workspace @passm/frontend",
+    "dev:extension": "npm run dev --workspace @passm/browser-extension",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:migrate": "npm run db:migrate --workspace @passm/backend",
+    "db:seed": "npm run db:seed --workspace @passm/backend"
+  }
+}

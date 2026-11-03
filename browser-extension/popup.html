@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PassM</title>
+  </head>
+  <!--
+    `popup` drives the fixed 380px width in ui/styles.css.
+
+    A Chrome popup sizes itself to its content, so without an explicit width the
+    window collapses to the narrowest thing it can lay out - a sliver a few
+    characters wide. There is no viewport to fall back on the way there is in a
+    tab, which is why this cannot be left to a percentage.
+  -->
+  <body class="popup">
+    <div id="root"></div>
+    <script type="module" src="/src/popup/main.tsx"></script>
+  </body>
+</html>

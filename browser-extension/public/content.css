@@ -1,0 +1,31 @@
+/**
+ * Page-level styles for the content script.
+ *
+ * Deliberately almost empty: the whole inline UI lives inside a closed shadow
+ * root with its own stylesheet, so the page cannot restyle it and it cannot leak
+ * into the page. The only rule needed here governs the shadow *host*, which is
+ * an ordinary element in the page's tree and would otherwise inherit whatever
+ * layout rules the site applies to unknown divs.
+ */
+
+#passm-inline-host {
+  /* Occupies no space and intercepts no clicks; the shadow children position
+     themselves absolutely and re-enable pointer events individually. */
+  all: initial !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  z-index: 2147483000 !important;
+}
+
+/*
+ * `pointer-events: none` is deliberately NOT set here. It is an inherited
+ * property, so it would pass through the shadow boundary and make the buttons
+ * inside unclickable. The host occupies no space instead: its absolutely
+ * positioned shadow children escape the 0x0 box and receive clicks normally.
+ */

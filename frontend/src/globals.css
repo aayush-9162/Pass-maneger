@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Design tokens.
+ *
+ * Every colour is an HSL triple in a CSS variable so components reference
+ * semantic names (`bg-background`, `text-muted-foreground`) instead of literal
+ * colours. Dark mode then swaps one block of variables rather than duplicating
+ * class names across the codebase.
+ *
+ * ## The palette
+ *
+ * Indigo, deliberately. The first palette was a desaturated navy that rendered
+ * as grey-on-white - technically a colour, visibly not one. Indigo is vivid
+ * enough that primary surfaces, active navigation and icon tiles read as
+ * designed rather than default, while staying calm enough for an admin tool
+ * someone stares at all day. Status colours (green/amber/red) are untouched so
+ * they keep their meaning.
+ */
+@layer base {
+  :root {
+    /*
+     * Interface typeface, bundled by @fontsource (imported in main.tsx) and
+     * served from this origin - the LAN deployment may be offline, and the CSP
+     * forbids third-party font requests anyway.
+     */
+    --font-sans: 'Plus Jakarta Sans Variable';
+
+    /* Off-white with a cool tint, so white cards visibly lift off the page. */
+    --background: 240 33% 98%;
+    --foreground: 234 30% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 234 30% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 234 30% 15%;
+
+    /* Indigo 600. The one colour the eye should find first. */
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft indigo wash for active navigation and quiet chips. */
+    --secondary: 236 64% 95%;
+    --secondary-foreground: 243 47% 38%;
+
+    --muted: 235 30% 94%;
+    --muted-foreground: 231 12% 45%;
+
+    --accent: 236 80% 96%;
+    --accent-foreground: 243 55% 42%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 152 64% 32%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 35 92% 42%;
+    --warning-foreground: 48 96% 99%;
+
+    --border: 234 28% 89%;
+    --input: 234 28% 87%;
+    --ring: 243 75% 59%;
+
+    /* Rounder than before; friendlier without turning into bubbles. */
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 233 28% 9%;
+    --foreground: 228 30% 94%;
+
+    --card: 233 25% 12%;
+    --card-foreground: 228 30% 94%;
+
+    --popover: 233 25% 12%;
+    --popover-foreground: 228 30% 94%;
+
+    /* Indigo 400 - the same identity, lifted for contrast on dark. */
+    --primary: 234 89% 74%;
+    --primary-foreground: 240 40% 12%;
+
+    --secondary: 236 30% 20%;
+    --secondary-foreground: 232 60% 88%;
+
+    --muted: 233 24% 18%;
+    --muted-foreground: 230 15% 66%;
+
+    --accent: 238 34% 22%;
+    --accent-foreground: 232 70% 88%;
+
+    --destructive: 0 63% 52%;
+    --destructive-foreground: 210 40% 98%;
+
+    --success: 152 55% 45%;
+    --success-foreground: 233 28% 9%;
+
+    --warning: 38 92% 55%;
+    --warning-foreground: 233 28% 9%;
+
+    --border: 235 22% 22%;
+    --input: 235 22% 24%;
+    --ring: 234 89% 74%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /*
+   * 17px base instead of the browser's 16px.
+   *
+   * Every Tailwind size is rem-based, so this one declaration scales the whole
+   * interface - text, paddings, icons - by ~6% without touching a component.
+   * Chosen over editing dozens of `text-sm`s, which would drift back with the
+   * next component added.
+   */
+  html {
+    font-size: 106.25%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+  }
+
+  /* Visible focus for keyboard users; the ring colour follows the theme. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+}
+
+@layer utilities {
+  /**
+   * Applied to secret values (temporary passwords). `user-select` stays enabled
+   * so the value can still be copied deliberately.
+   */
+  .secret-value {
+    @apply font-mono text-sm tracking-tight;
+  }
+}
