@@ -22,7 +22,6 @@ import {
   checkServer,
   getApiBaseUrl,
   getServerOrigin,
-  originPattern,
   parseServerAddress,
   setServerOrigin,
 } from '../lib/server';
@@ -565,8 +564,8 @@ function shortServerLabel(origin: string): string {
  * address can be changed when the server moves but not by accident.
  *
  * The address is saved permanently on this browser until changed here again.
- * Chrome's permission for a new address is requested inside the click - it only
- * allows that from a user gesture - and the old address's is released.
+ * No permission prompt: the extension already has access to every http/https
+ * site (see the manifest), so any address the server moves to is covered.
  */
 export function ServerAddress({ onChanged }: { onChanged?: () => void }): React.ReactElement {
   const [current, setCurrent] = React.useState<string | null>(null);
@@ -585,23 +584,12 @@ export function ServerAddress({ onChanged }: { onChanged?: () => void }): React.
     setEditing(true);
   };
 
-  const apply = async (origin: string, granted: Promise<boolean>): Promise<void> => {
+  const apply = async (origin: string): Promise<void> => {
     setBusy(true);
     setMessage(null);
     try {
-      if (!(await granted)) {
-        setMessage({ error: true, text: 'Chrome did not allow that address. Nothing changed.' });
-        return;
-      }
-
-      const previous = current;
       await setServerOrigin(origin);
       setCurrent(origin);
-
-      // Release the address no longer in use - but never the build's own.
-      if (previous && previous !== origin && previous !== DEFAULT_SERVER_ORIGIN) {
-        await chrome.permissions.remove({ origins: [originPattern(previous)] }).catch(() => false);
-      }
 
       await sendToBackground({ type: 'SERVER_CHANGED' });
       onChanged?.();
@@ -626,10 +614,7 @@ export function ServerAddress({ onChanged }: { onChanged?: () => void }): React.
       setEditing(false);
       return;
     }
-    // Requested before anything is awaited: Chrome only shows the permission
-    // prompt while the click is still being handled.
-    const granted = chrome.permissions.request({ origins: [originPattern(parsed.origin)] });
-    void apply(parsed.origin, granted);
+    void apply(parsed.origin);
   };
 
   if (!editing) {
@@ -673,7 +658,7 @@ export function ServerAddress({ onChanged }: { onChanged?: () => void }): React.
           type="button"
           className="btn-link"
           title={`Back to ${DEFAULT_SERVER_ORIGIN}`}
-          onClick={() => void apply(DEFAULT_SERVER_ORIGIN, Promise.resolve(true))}
+          onClick={() => void apply(DEFAULT_SERVER_ORIGIN)}
           disabled={busy}
         >
           Default

@@ -25,8 +25,15 @@ Requires Chrome 114+ for the side panel API.
 **Changing the server address.** `VITE_API_URL` is only the default. If the
 server's IP changes, triple-click the small server address at the bottom of the popup
 or side panel and enter the new one. It is saved in
-`chrome.storage.local` and kept until changed again; Chrome asks once for
-permission to reach the new address.
+`chrome.storage.local` and kept until changed again.
+
+**Sites with the browser's own Sign in box.** Some sites (vendor extranets,
+routers) use HTTP authentication: no login form, just Chrome's dialog. PassM
+answers it with the login saved for that exact site - top-level pages only, and
+only once per request, so a wrong password falls back to the normal dialog. The
+site's address must be saved on the entry (e.g. `https://extranet2013.englandfurniture.com`).
+If several logins match it equally, PassM does not guess; copy the password
+from the popup instead.
 
 ---
 
@@ -37,6 +44,7 @@ permission to reach the new address.
 | Sign in, session refresh, vault unlock | service worker |
 | Vault sync and local search index | service worker |
 | Autofill, inline field button | content script |
+| Browser "Sign in" box (HTTP auth) | service worker (`http-auth.ts`) |
 | Login / signup / change-password detection | content script |
 | Quick search, favourites, recent, generator | popup |
 | Full vault browser, settings | side panel |
@@ -58,6 +66,7 @@ public/content.css                             styles the shadow host only
 src/background/
   service-worker.ts    message router, auth session, fill
   vault-session.ts     item index and password fetches (read-only)
+  http-auth.ts         answers the browser's own Sign in box (HTTP Basic/Digest)
   clipboard.ts         offscreen copy + alarm-driven auto-clear
   context-menus.ts     right-click menu
 
@@ -157,10 +166,8 @@ levels from each password field — now the norm in single-page apps.
 | `sidePanel` | Vault browser beside the page |
 | `clipboardWrite`, `offscreen` | A service worker has no DOM and cannot reach the clipboard; a short-lived offscreen document performs the write |
 | `tabs` | Read the active tab's URL to match entries. Not used for tracking — nothing is transmitted |
-| `host_permissions` | The PassM API origin **only** — deliberately not a wildcard |
-
-Change `host_permissions` in `public/manifest.json` to your deployed API before
-packing, and keep `VITE_API_URL` in step with it.
+| `webRequest`, `webRequestAuthProvider` | Answer the browser's own **Sign in** box (HTTP Basic/Digest), which page filling cannot reach |
+| `host_permissions` | Every http/https site. Chrome only raises that sign-in box to an extension with access to the site, and a vendor can be anywhere. No new install warning: the content script already runs on every site. Also covers the PassM server wherever it moves |
 
 ---
 

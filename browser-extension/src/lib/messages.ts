@@ -35,6 +35,8 @@ export interface AuthStatePayload {
   user: PublicUser | null;
   sessionId: string | null;
   accessTokenExpiresAt: number | null;
+  /** Set when the server ended the sign-in, to explain the sign-in screen. */
+  signedOutReason?: string | null;
 }
 
 /** `locked`: signed in, but the item list is not loaded (yet, or it failed). */

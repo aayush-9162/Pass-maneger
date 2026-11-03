@@ -151,7 +151,7 @@ export function App(): React.ReactElement {
       {loading ? (
         <div className="loading">Checking your session...</div>
       ) : !auth?.authenticated ? (
-        <SignInForm onSignedIn={refresh} />
+        <SignInForm onSignedIn={refresh} initialError={auth?.signedOutReason} />
       ) : vault?.state !== 'unlocked' ? (
         <UnlockForm onUnlocked={refresh} />
       ) : (

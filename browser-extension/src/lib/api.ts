@@ -93,6 +93,32 @@ async function parse<T>(response: Response): Promise<T> {
   throw new ExtensionApiError(payload.error.message, payload.error.code, response.status);
 }
 
+/**
+ * Answers meaning this sign-in is over for good: an administrator signed the
+ * person out or changed their role, the account was locked or disabled, or the
+ * token no longer verifies. Retrying cannot fix any of them - only a fresh
+ * sign-in can. (`TOKEN_EXPIRED` is not here: a refresh fixes that.)
+ */
+const SESSION_ENDED_CODES = new Set<string>([
+  ERROR_CODES.SESSION_REVOKED,
+  ERROR_CODES.TOKEN_INVALID,
+  ERROR_CODES.REFRESH_TOKEN_REUSED,
+  ERROR_CODES.ACCOUNT_LOCKED,
+  ERROR_CODES.ACCOUNT_DISABLED,
+]);
+
+type SessionEndedListener = (error: ExtensionApiError, rejectedAccessToken: string) => void;
+
+let sessionEndedListener: SessionEndedListener | null = null;
+
+/**
+ * Called when a signed-in request is refused because the session is over, so
+ * the worker can drop its local copy instead of failing quietly with it.
+ */
+export function onSessionEnded(listener: SessionEndedListener): void {
+  sessionEndedListener = listener;
+}
+
 async function send<T>(
   path: string,
   init: {
@@ -120,7 +146,14 @@ async function send<T>(
     );
   }
 
-  return parse<T>(response);
+  try {
+    return await parse<T>(response);
+  } catch (error) {
+    if (init.accessToken && error instanceof ExtensionApiError && SESSION_ENDED_CODES.has(error.code)) {
+      sessionEndedListener?.(error, init.accessToken);
+    }
+    throw error;
+  }
 }
 
 export const extensionApi = {

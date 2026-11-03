@@ -52,11 +52,6 @@ export async function setServerOrigin(origin: string | null): Promise<void> {
   }
 }
 
-/** Match pattern for `chrome.permissions` covering one origin. */
-export function originPattern(origin: string): string {
-  return `${origin}/*`;
-}
-
 /**
  * Turn what someone typed into an origin.
  *

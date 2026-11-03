@@ -25,10 +25,10 @@
  * extension pages.
  */
 
-import { SECRET_PURPOSE, generatePassword } from '@passm/shared';
+import { ERROR_CODES, SECRET_PURPOSE, generatePassword } from '@passm/shared';
 
 import { REFRESH_ALARM, REFRESH_SKEW_SECONDS } from '../lib/config';
-import { ExtensionApiError, extensionApi } from '../lib/api';
+import { ExtensionApiError, extensionApi, onSessionEnded } from '../lib/api';
 import { clearFavorites, readFavorites, toggleFavorite } from '../lib/favorites';
 import { readSettings } from '../lib/settings';
 import {
@@ -55,6 +55,7 @@ import {
 import { bestMatch } from '../lib/uri-match';
 import { clipboard } from './clipboard';
 import { contextMenus } from './context-menus';
+import { registerHttpAuth } from './http-auth';
 import { vaultSession } from './vault-session';
 
 const VAULT_LOCK_ALARM = 'passm:vault-lock';
@@ -196,12 +197,55 @@ async function refreshSession(session: StoredSession): Promise<StoredSession | n
       return session;
     }
 
-    await clearSession();
-    await clearVaultSession();
-    await chrome.alarms.clear(REFRESH_ALARM);
+    await endLocalSession();
     return null;
   }
 }
+
+/** Why the server ended the last sign-in, shown on the sign-in screen. */
+const SIGNED_OUT_REASON_KEY = 'passm.signedOutReason';
+
+/**
+ * Forget the sign-in on this browser: tokens, the item list and every timer,
+ * then tell the open surfaces so they show the sign-in screen.
+ */
+async function endLocalSession(reason?: string): Promise<void> {
+  await clearSession();
+  await clearVaultSession();
+  await chrome.alarms.clear(REFRESH_ALARM);
+  await chrome.alarms.clear(VAULT_LOCK_ALARM);
+  if (reason) await chrome.storage.session.set({ [SIGNED_OUT_REASON_KEY]: reason });
+  await refreshContextMenus();
+  await broadcastVaultState();
+}
+
+/*
+ * The server ended this sign-in (signed out by an administrator, role changed,
+ * account locked). Without this the extension kept its stale tokens and item
+ * list, looked signed in, and every fill failed silently.
+ */
+let endingSession: Promise<void> | null = null;
+onSessionEnded((error, rejectedAccessToken) => {
+  endingSession ??= (async () => {
+    // A late answer to a request made with an earlier sign-in's token must not
+    // end the newer one.
+    const current = await readSession();
+    if (current?.accessToken !== rejectedAccessToken) return;
+
+    // Locked / disabled: the server's own wording says what to do. Otherwise
+    // the usual cause is an administrator ending the session or changing the
+    // person's role.
+    const accountBlocked =
+      error.code === ERROR_CODES.ACCOUNT_LOCKED || error.code === ERROR_CODES.ACCOUNT_DISABLED;
+    await endLocalSession(
+      accountBlocked
+        ? error.message
+        : 'You were signed out - an administrator ended your session or changed your access. Sign in again to continue.',
+    );
+  })().finally(() => {
+    endingSession = null;
+  });
+});
 
 async function maintainSession(): Promise<void> {
   const session = await readSession();
@@ -226,6 +270,10 @@ async function requireAccessToken(): Promise<string> {
   if (!session) throw new Error('Sign in to PassM first.');
   return session.accessToken;
 }
+
+// The browser's own "Sign in" box (HTTP Basic/Digest). Registered at the top
+// level so Chrome can wake the worker for it.
+registerHttpAuth(requireAccessToken);
 
 // ---------------------------------------------------------------------------
 // Broadcasting state
@@ -343,7 +391,15 @@ async function handleAuthState(): Promise<AuthStatePayload> {
   const session = await getUsableSession();
 
   if (!session) {
-    return { authenticated: false, user: null, sessionId: null, accessTokenExpiresAt: null };
+    const stored = await chrome.storage.session.get(SIGNED_OUT_REASON_KEY);
+    const reason = stored[SIGNED_OUT_REASON_KEY];
+    return {
+      authenticated: false,
+      user: null,
+      sessionId: null,
+      accessTokenExpiresAt: null,
+      signedOutReason: typeof reason === 'string' ? reason : null,
+    };
   }
 
   return {
@@ -430,6 +486,7 @@ async function handleLogin(rememberDevice: boolean): Promise<AuthStatePayload> {
     user: result.user,
     sessionId: result.session.id,
   });
+  await chrome.storage.session.remove(SIGNED_OUT_REASON_KEY);
 
   try {
     await vaultSession.open(result.tokens.accessToken);
@@ -467,12 +524,7 @@ async function handleLogout(): Promise<AuthStatePayload> {
   // with - the ids alone would say that much.
   if (session) await clearFavorites(session.user.id);
 
-  await clearSession();
-  await clearVaultSession();
-  await chrome.alarms.clear(REFRESH_ALARM);
-  await chrome.alarms.clear(VAULT_LOCK_ALARM);
-  await refreshContextMenus();
-  await broadcastVaultState();
+  await endLocalSession();
 
   return { authenticated: false, user: null, sessionId: null, accessTokenExpiresAt: null };
 }

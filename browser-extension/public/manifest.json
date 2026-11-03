@@ -65,11 +65,12 @@
     "clipboardWrite",
     "offscreen",
     "tabs",
-    "identity"
+    "identity",
+    "webRequest",
+    "webRequestAuthProvider"
   ],
 
-  "host_permissions": ["http://localhost:4000/*"],
-  "optional_host_permissions": ["http://*/*", "https://*/*"],
+  "host_permissions": ["http://*/*", "https://*/*"],
 
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; frame-ancestors 'none'"
@@ -85,8 +86,8 @@
     "offscreen": "A service worker has no DOM and cannot reach the clipboard at all. A short-lived offscreen document performs the copy and the later auto-clear, then closes.",
     "tabs": "Read the active tab's URL to match vault entries to the site. Not used to track browsing - nothing is transmitted.",
     "identity": "Sign in with Google. Opens Google's own sign-in window (launchWebAuthFlow) and receives the ID token at https://<extension-id>.chromiumapp.org/, which must be an authorised redirect URI on the OAuth client. No Google data is read beyond the sign-in token.",
-    "host_permissions": "The PassM API origin ONLY. Deliberately not a wildcard. Replaced at build time with the origin of VITE_API_URL, so the two always match.",
-    "optional_host_permissions": "Lets the user point the extension at a different PassM server (its IP changed). Nothing is granted at install; Chrome asks for the one origin the user saves, and the old one is released.",
+    "host_permissions": "Every http/https site. Needed for the browser's own HTTP sign-in box (webRequest.onAuthRequired only fires for sites the extension has host access to) - a vendor site can be anywhere. It adds no install warning: the content script already runs on every site, which Chrome already reports as access to all websites. It also covers the PassM server at whatever address it moves to.",
+    "webRequest + webRequestAuthProvider": "Answer the browser's own Sign in dialog (HTTP Basic/Digest) with the login saved for that exact site - top-level pages only, once per request. See background/http-auth.ts.",
     "exclude_matches": "The browser new-tab pages and the extension stores. There is never a login form to fill on any of them, and injecting there only produced console noise - the new-tab document forbids some APIs by Permissions-Policy. Excluding them is both quieter and less surface.",
     "content_scripts_all_frames": "Login forms are frequently inside an iframe (Microsoft and Amazon both do this), so the detector has to run in child frames too."
   }

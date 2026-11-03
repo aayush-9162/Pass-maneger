@@ -4,14 +4,13 @@ import { resolve } from 'node:path';
 import { defineConfig, loadEnv, type Plugin } from 'vite';
 
 /**
- * Finish the shipped manifest: strip documentation keys, and point
- * `host_permissions` at the API this build talks to.
+ * Finish the shipped manifest: strip documentation keys, and check that
+ * `host_permissions` covers the API this build talks to.
  *
- * The permission is derived from `VITE_API_URL` rather than kept by hand in
- * `public/manifest.json`: the two must match exactly or the service worker's
- * fetch is blocked before it reaches the network, and a build for the network
- * address with a manifest still naming localhost fails in exactly that
- * unhelpful way. It stays a single origin - never a wildcard.
+ * Host access is every http/https site - the browser's HTTP sign-in box can
+ * come from any of them (background/http-auth.ts) - so it always includes the
+ * server. The check is there so a later narrowing cannot silently produce a
+ * build whose service worker fetch is blocked before it reaches the network.
  *
  * JSON has no comments, so the source manifest explains each permission in
  * `_comment_*` keys - which is worth keeping, because "why does a password
@@ -35,7 +34,14 @@ function finalizeManifest(apiUrl: string): Plugin {
       const shipped = Object.fromEntries(
         Object.entries(manifest).filter(([key]) => !key.startsWith('_comment')),
       );
-      shipped.host_permissions = [`${new URL(apiUrl).origin}/*`];
+      // Every site: the browser's HTTP sign-in box can come from any of them
+      // (see background/http-auth.ts). Checked here so a build never ships
+      // without access to its own server.
+      const hosts = shipped.host_permissions as string[];
+      const apiScheme = `${new URL(apiUrl).protocol}//*/*`;
+      if (!hosts.includes(apiScheme)) {
+        throw new Error(`manifest host_permissions must cover ${apiScheme} (the PassM server)`);
+      }
 
       writeFileSync(manifestPath, `${JSON.stringify(shipped, null, 2)}\n`);
     },
