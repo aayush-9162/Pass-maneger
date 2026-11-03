@@ -185,65 +185,107 @@ changes.
 ## Running on the office network (nip.io)
 
 > **Google sign-in needs a hostname and internet access.** Google will not
-> accept a bare IP such as `http://192.168.4.103:4000` as an origin, so the
+> accept a bare IP such as `http://192.168.0.211:1225` as an origin, so the
 > server is reached through [nip.io](https://nip.io): public DNS resolves
-> `192.168.4.103.nip.io` to `192.168.4.103`, with no setup. Plain HTTP on the
+> `192.168.0.211.nip.io` to `192.168.0.211`, with no setup. Plain HTTP on the
 > nip.io name is accepted. Browsers and the API both need to reach Google
 > (`accounts.google.com`, `www.googleapis.com`) and nip.io's DNS; a LAN with no
 > route out cannot sign anyone in.
 >
-> The name follows the IP. If the server's address changes (DHCP): add the new
-> `http://<ip>.nip.io:4000` to the Google OAuth client's origins, and change the
-> address in each extension (triple-click the small server address at the bottom of the
-> popup or side panel). It is kept until changed again - no rebuild.
-> Reserving the IP in the router avoids all of this.
+> The name follows the IP. If the server's address changes: add the new
+> `http://<ip>.nip.io:<port>` to the Google OAuth client's origins, and change
+> the address in each extension (triple-click the small server address at the
+> bottom of the popup or side panel). It is kept until changed again - no
+> rebuild. Reserving the IP avoids all of this.
 
-The API can serve the console itself, so everything is on one origin and one
-port — no CORS to configure, and cookies work with plain `SameSite=Lax`.
+The API serves the console itself, under `/passmadmin/`, so everything is on
+one origin and one port - no CORS to configure, and cookies work with plain
+`SameSite=Lax`. The production console build calls the API at the relative
+`/api/v1` and is built for `/passmadmin/` by default, so a plain git clone
+builds correctly with no frontend `.env`.
+
+### Production: the VM
+
+| | |
+| --- | --- |
+| Server | `192.168.0.211`, port `1225` |
+| Console (admins) | `http://192.168.0.211.nip.io:1225/passmadmin/` - the bare host redirects there |
+| API (extension) | `http://192.168.0.211.nip.io:1225/api/v1` |
+| Database | MySQL on the VM itself (`DB_HOST=localhost`) |
+
+**1. Get the code and build it** (Node 24):
 
 ```bash
-# 1. Build the console with a relative API path, so no IP is baked in.
-#    A file rather than an inline variable: Git Bash rewrites a bare "/api/v1"
-#    on the command line into a Windows path.
-echo VITE_API_URL=/api/v1 > frontend/.env.production.local
-npm run build:web
-
-# 2. The extension, pointed at the server. Its host_permissions follow.
-echo VITE_API_URL=http://192.168.4.103.nip.io:4000/api/v1 > browser-extension/.env
-npm run build --workspace @passm/browser-extension
-
-# 3. HTTPS only: certificate for the IP and its nip.io names
-./scripts/generate-lan-cert.sh 192.168.4.103     # Git Bash on Windows
+git clone https://github.com/aayush-9162/Pass-maneger.git passm
+cd passm
+npm ci
+npm run build:lan          # shared + backend (dist/) + console (frontend/out/)
 ```
 
-Then in `backend/.env`:
+**2. Put `backend/.env` in place.** It is git-ignored - copy it to the VM by
+hand (scp, or paste it into an editor). It holds the database password and
+`ENCRYPTION_KEY`. **Back that key up**: every stored password is encrypted
+with it, and losing it loses them all. The VM's values:
 
 ```ini
-HOST=0.0.0.0                 # bind all interfaces, not just localhost
-WEB_ROOT=../frontend/out     # serve the console from this process
-CORS_ORIGINS=                # not needed: same origin
-
-# Plain HTTP
+NODE_ENV=production
+PORT=1225
+HOST=0.0.0.0
+LOG_LEVEL=info               # debug is refused in production
+DB_HOST=localhost
+DB_USER=passm
+DB_NAME=passm
+WEB_ROOT=../frontend/out
+WEB_BASE_PATH=/passmadmin
+CORS_ORIGINS=                # same origin - not needed
+CORS_ALLOW_EXTENSION_ORIGINS=fllkfipajdahciclfcimfcenmfallgfm
 HTTPS_ENABLED=false
 COOKIE_SECURE=false          # a Secure cookie is never sent over http://
-# ALLOW_INSECURE_HTTP=true   # needed only with NODE_ENV=production
-
-# ...or HTTPS (see "On HTTP" below)
-# HTTPS_ENABLED=true
-# TLS_CERT_PATH=certs/server.crt
-# TLS_KEY_PATH=certs/server.key
-# COOKIE_SECURE=true
+ALLOW_INSECURE_HTTP=true     # plain HTTP, private addresses only
+SEED_ADMIN_EMAIL=aayushdubey@123cfc.com
 ```
 
-Then:
+**3. Create the tables and the first admin** (first time only):
 
-- Add `http://192.168.4.103.nip.io:4000` (or the `https://` form) to the Google
-  OAuth client's **Authorised JavaScript origins**.
-- Open TCP 4000 in the server's firewall for the private network.
-- HTTPS only: install `backend/certs/ca.crt` on every client machine - the
-  script prints the command for each OS.
+```bash
+cd backend
+npm run db:migrate
+npm run db:seed
+```
 
-Browse to `http://192.168.4.103.nip.io:4000`.
+**4. Run it under PM2** so it survives crashes and reboots:
+
+```bash
+npm i -g pm2
+pm2 start ecosystem.config.js --env production
+pm2 save
+pm2 startup                # prints one more command - run it
+```
+
+One process by default; without Redis, more workers would each keep their own
+rate limits and session cache.
+
+**5. Network and Google**
+
+- Open TCP 1225 in the VM's firewall for the private network
+  (e.g. `sudo ufw allow 1225/tcp`).
+- Add `http://192.168.0.211.nip.io:1225` to the Google OAuth client's
+  **Authorised JavaScript origins** (an origin has no path - not `/passmadmin`).
+
+**Updating:** `git pull && npm ci && npm run build:lan && pm2 reload passm-api`.
+
+**The extension** is built on a development machine and its `dist/` handed
+out. Its default server comes from `browser-extension/.env`:
+
+```bash
+echo VITE_API_URL=http://192.168.0.211.nip.io:1225/api/v1 > browser-extension/.env
+npm run build --workspace @passm/browser-extension
+```
+
+**HTTPS instead** (optional): `./scripts/generate-lan-cert.sh 192.168.0.211`,
+then `HTTPS_ENABLED=true`, `TLS_CERT_PATH=certs/server.crt`,
+`TLS_KEY_PATH=certs/server.key`, `COOKIE_SECURE=true`, and install
+`backend/certs/ca.crt` on every client - the script prints the command per OS.
 
 **On HTTP:** the API runs, and the clipboard falls back to `execCommand`.
 `ALLOW_INSECURE_HTTP` only accepts private addresses, and the server warns at

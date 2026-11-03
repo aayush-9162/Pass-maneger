@@ -89,8 +89,9 @@ import {
 
 import { getDeviceFingerprint, getDeviceId, getDeviceName } from './device';
 
+// A production build is served by the API itself, so it calls it same-origin.
 export const API_BASE_URL = (
-  import.meta.env.VITE_API_URL ?? 'http://localhost:4000/api/v1'
+  import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? '/api/v1' : 'http://localhost:4000/api/v1')
 ).replace(/\/$/, '');
 
 /** Error carrying the API's machine-readable code, so callers can branch on it. */

@@ -7,6 +7,8 @@
 interface ImportMetaEnv {
   /** Base URL of the PassM API, including the version prefix. */
   readonly VITE_API_URL?: string;
+  /** Path the production build is served under. Default `passmadmin`. */
+  readonly VITE_BASE_PATH?: string;
   readonly VITE_APP_NAME?: string;
   /** Shown in the header; distinguishes staging from production. */
   readonly VITE_ENVIRONMENT_LABEL?: string;

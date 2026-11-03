@@ -146,8 +146,16 @@ export function createApp(): Express {
   const webRoot = resolveWebRoot();
 
   if (webRoot) {
-    app.use(webContentSecurityPolicy(), createWebRouter(webRoot));
-    logger.info('Serving the web console from this process', { webRoot });
+    const basePath = env.webBasePath;
+    app.use(basePath, webContentSecurityPolicy(), createWebRouter(webRoot));
+
+    // The bare host opens the console rather than a 404.
+    if (basePath !== '/') {
+      app.get('/', (_req, res) => {
+        res.redirect(302, `${basePath}/`);
+      });
+    }
+    logger.info('Serving the web console from this process', { webRoot, basePath });
   } else {
     /** No console to serve: point callers at the versioned API. */
     app.get('/', (_req, res) => {

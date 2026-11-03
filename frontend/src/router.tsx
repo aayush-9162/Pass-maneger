@@ -64,4 +64,7 @@ export const router = createBrowserRouter([
       { path: '*', lazy: page(() => import('./pages/not-found')) },
     ],
   },
-]);
+], {
+  // `/passmadmin` in a production build (vite.config.ts `base`), `/` in dev.
+  basename: import.meta.env.BASE_URL.replace(/\/$/, '') || '/',
+});

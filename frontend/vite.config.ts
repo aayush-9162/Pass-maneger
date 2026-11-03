@@ -48,11 +48,21 @@ function buildDevCsp(apiUrl: string): string {
   ].join('; ');
 }
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, import.meta.dirname, 'VITE_');
   const apiUrl = env.VITE_API_URL ?? 'http://localhost:4000/api/v1';
 
+  /*
+   * The production build is served by the API under /passmadmin/ (the
+   * backend's WEB_BASE_PATH, same default), so it works from a plain git clone
+   * with no .env. The dev server stays at the root.
+   */
+  const buildPath = (env.VITE_BASE_PATH ?? 'passmadmin').replace(/^\/+|\/+$/g, '');
+  const basePath = command === 'build' && buildPath ? `/${buildPath}/` : '/';
+
   return {
+    base: basePath,
+
     plugins: [react()],
 
     resolve: {

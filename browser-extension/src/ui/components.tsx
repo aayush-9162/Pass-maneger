@@ -655,7 +655,7 @@ export function ServerAddress({ onChanged }: { onChanged?: () => void }): React.
         aria-label="PassM server address"
         autoComplete="off"
         spellCheck={false}
-        placeholder="192.168.4.103.nip.io:4000"
+        placeholder="192.168.0.211.nip.io:1225"
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {

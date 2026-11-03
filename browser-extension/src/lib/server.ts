@@ -21,7 +21,7 @@ const SERVER_KEY = 'passm.serverOrigin';
 
 const defaultUrl = new URL(DEFAULT_API_URL);
 
-/** The build's server, e.g. `http://192.168.4.103.nip.io:4000`. */
+/** The build's server, e.g. `http://192.168.0.211.nip.io:1225`. */
 export const DEFAULT_SERVER_ORIGIN = defaultUrl.origin;
 
 /** The API path on whichever server, e.g. `/api/v1`. */
@@ -38,7 +38,7 @@ export async function getServerOrigin(): Promise<string> {
   }
 }
 
-/** Base URL for API calls, e.g. `http://192.168.4.103.nip.io:4000/api/v1`. */
+/** Base URL for API calls, e.g. `http://192.168.0.211.nip.io:1225/api/v1`. */
 export async function getApiBaseUrl(): Promise<string> {
   return `${await getServerOrigin()}${API_PATH}`;
 }
@@ -60,7 +60,7 @@ export function originPattern(origin: string): string {
 /**
  * Turn what someone typed into an origin.
  *
- * Accepts `192.168.4.103.nip.io:4000`, `http://192.168.4.103.nip.io:4000`, or a
+ * Accepts `192.168.0.211.nip.io:1225`, `http://192.168.0.211.nip.io:1225`, or a
  * full API URL; anything after the host and port is ignored. A missing scheme
  * means http, matching how the office network runs PassM.
  */

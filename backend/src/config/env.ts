@@ -314,6 +314,21 @@ const envSchema = z
      * empty to run the console separately (e.g. `next dev`).
      */
     WEB_ROOT: zOptionalStr,
+    /**
+     * URL path the console is served under, e.g. `/passmadmin` for
+     * `http://host:port/passmadmin/`. Must match the path the console was built
+     * for (`VITE_BASE_PATH`, same default). `/` serves it at the root.
+     */
+    WEB_BASE_PATH: z
+      .string()
+      .default('/passmadmin')
+      .transform((value) => `/${value.trim().replace(/^\/+|\/+$/g, '')}`)
+      .refine((value) => value === '/' || /^\/[A-Za-z0-9._~-]+(\/[A-Za-z0-9._~-]+)*$/.test(value), {
+        message: 'must be a plain URL path such as /passmadmin',
+      })
+      .refine((value) => !value.startsWith('/api'), {
+        message: 'must not overlap the API under /api',
+      }),
   })
   // -------------------------------------------------------------------------
   // Cross-field rules. These are the checks that actually catch dangerous
@@ -607,6 +622,9 @@ export const env = Object.freeze({
 
   /** Absolute path to the exported web console, or undefined to not serve it. */
   webRoot: raw.WEB_ROOT ? path.resolve(raw.WEB_ROOT) : undefined,
+
+  /** Path the console is served under: `/passmadmin`, or `/` for the root. */
+  webBasePath: raw.WEB_BASE_PATH,
 
   // --- Rate limiting -------------------------------------------------------
   rateLimit: {
