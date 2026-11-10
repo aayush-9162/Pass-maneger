@@ -225,6 +225,18 @@ export const sharedVaultRepository = {
     return rows.map(mapSharedVaultRow);
   },
 
+  /** Every vault not deleted - an administrator's view, which no grant limits. */
+  async listActive(executor?: SqlExecutor): Promise<SharedVault[]> {
+    const rows = await query<SharedVaultRow>(
+      `SELECT ${VAULT_COLUMNS} ${VAULT_SOURCE}
+        WHERE sv.deleted_at IS NULL
+        ORDER BY sv.name ASC`,
+      [],
+      executor,
+    );
+    return rows.map(mapSharedVaultRow);
+  },
+
   /** The user-detail "what can this person use" list: every vault granted to the user. */
   async accessForUser(
     userId: string,

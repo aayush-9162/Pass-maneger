@@ -42,6 +42,7 @@ import {
   VAULT_KIND,
   VAULT_PERMISSIONS,
   VAULT_ROLE,
+  VAULT_ROLE_PERMISSIONS,
   entitledToSecrets,
   hasVaultPermission,
   type MemberSharedVault,
@@ -282,8 +283,28 @@ export const sharedVaultService = {
   // Membership view
   // -------------------------------------------------------------------------
 
-  /** The caller's own shared vaults, with their rights on each. */
-  async listForMember(userId: string): Promise<MemberSharedVault[]> {
+  /**
+   * The caller's shared vaults, with their rights on each.
+   *
+   * For an administrator that is every vault, with full rights: the console is
+   * theirs to run, and a group they were never granted would otherwise be
+   * invisible to them - or visible as LP1-style "viewer" from a default grant,
+   * and then refuse every change they made to it.
+   */
+  async listForMember(actor: AuthContext): Promise<MemberSharedVault[]> {
+    const userId = actor.userId;
+
+    if (this.isVaultAdministrator(actor)) {
+      const vaults = await sharedVaultRepository.listActive();
+      return vaults.map((vault) => ({
+        ...vault,
+        permissions: [...VAULT_ROLE_PERMISSIONS[VAULT_ROLE.OWNER]],
+        accessRole: VAULT_ROLE.OWNER,
+        restrictions: { ...NO_RESTRICTIONS },
+        canReadSecrets: true,
+      }));
+    }
+
     const vaults = await sharedVaultRepository.listForUser(userId);
 
     // Effective access is resolved per vault rather than in one query: merging
@@ -480,7 +501,7 @@ export const sharedVaultService = {
   ): Promise<SharedItemSecret> {
     const vault = await this.getById(vaultId);
     const item = await this.findMemberItem(vaultId, itemId, actor, VAULT_PERMISSIONS.READ);
-    await this.requireSecretAccess(vault, actor.userId);
+    await this.requireSecretAccess(vault, actor);
 
     const secret = item.encryptedSecret
       ? (JSON.parse(decrypt(item.encryptedSecret, itemAad(item.id, 'secret'))) as SharedItemSecret)
@@ -516,7 +537,7 @@ export const sharedVaultService = {
     if (vault.kind === VAULT_KIND.ITEM && vault.itemCount > 0) {
       throw new ConflictError('An individual password holds exactly one entry.');
     }
-    if (dto.secret) await this.requireSecretAccess(vault, actor.userId);
+    if (dto.secret) await this.requireSecretAccess(vault, actor);
 
     const itemId = await this.storeItem(vaultId, dto, actor.userId);
     await this.auditItem(AUDIT_ACTIONS.ITEM_CREATED, vault, itemId, actor, context, {
@@ -566,7 +587,7 @@ export const sharedVaultService = {
 
     // Writing a password you are not allowed to read would let a hidden member
     // replace a credential they cannot see - refused for the same reason.
-    if (dto.secret) await this.requireSecretAccess(vault, actor.userId);
+    if (dto.secret) await this.requireSecretAccess(vault, actor);
 
     const affected = await sharedVaultRepository.updateItem(itemId, dto.revision, {
       ...(dto.data ? { encryptedData: sealData(itemId, dto.data) } : {}),
@@ -812,9 +833,13 @@ export const sharedVaultService = {
     return accessRequestRepository.hasApprovedReveal(vault.id, userId);
   },
 
-  async requireSecretAccess(vault: SharedVault, userId: string): Promise<void> {
-    const access = await sharedVaultRepository.effectiveAccess(vault.id, userId);
-    if (await this.mayReadSecrets(vault, userId, access.restrictions)) return;
+  async requireSecretAccess(vault: SharedVault, actor: AuthContext): Promise<void> {
+    // Hidden passwords and approval-to-reveal govern members. Administrators
+    // are the ones who set those rules and approve the requests.
+    if (this.isVaultAdministrator(actor)) return;
+
+    const access = await sharedVaultRepository.effectiveAccess(vault.id, actor.userId);
+    if (await this.mayReadSecrets(vault, actor.userId, access.restrictions)) return;
 
     throw new ForbiddenError(
       vault.requireApprovalToReveal && entitledToSecrets(access.restrictions)
@@ -823,12 +848,26 @@ export const sharedVaultService = {
     );
   },
 
+  /**
+   * Administrators hold every right on every vault. Grants and restrictions
+   * are how administrators govern *members*; applying them to administrators
+   * meant one promoted later could not add a password to a group they did not
+   * create ("You do not have that level of access to this vault").
+   *
+   * The same permission the group and access checks below already accept.
+   */
+  isVaultAdministrator(actor: AuthContext): boolean {
+    return actor.permissions.includes(PERMISSIONS.SHARED_VAULT_MANAGE);
+  },
+
   /** Require an object permission on a vault, after its restrictions. */
   async requireVaultPermission(
     vaultId: string,
     actor: AuthContext,
     permission: VaultPermission,
   ): Promise<VaultPermission[]> {
+    if (this.isVaultAdministrator(actor)) return [...VAULT_ROLE_PERMISSIONS[VAULT_ROLE.OWNER]];
+
     const access = await sharedVaultRepository.effectiveAccess(vaultId, actor.userId);
 
     if (!hasVaultPermission(access.permissions, permission)) {

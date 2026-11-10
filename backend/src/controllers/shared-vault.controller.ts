@@ -60,7 +60,7 @@ export async function listAllVaults(
 /** GET /shared/vaults - the caller's own, with their rights on each. */
 export async function listMyVaults(req: TypedRequest, res: Response): Promise<void> {
   const auth = requireAuth(req);
-  sendSuccess(res, { vaults: await sharedVaultService.listForMember(auth.userId) });
+  sendSuccess(res, { vaults: await sharedVaultService.listForMember(auth) });
 }
 
 /** GET /admin/shared-vaults/:vaultId | GET /shared/vaults/:vaultId */
