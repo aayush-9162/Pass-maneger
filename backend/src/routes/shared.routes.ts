@@ -177,6 +177,9 @@ sharedRoutes.post(
   asyncHandler(sharedVaultController.createItem),
 );
 
+/** Every vault and item the caller can see, in one request. */
+sharedRoutes.get('/items', asyncHandler(sharedVaultController.listAllItems));
+
 /** An individual password: the server wraps it in a vault of its own. */
 sharedRoutes.post(
   '/items',

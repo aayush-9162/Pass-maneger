@@ -231,51 +231,38 @@ export default function PasswordsPage(): React.ReactElement {
   const [deletingGroup, setDeletingGroup] = React.useState<MemberSharedVault | null>(null);
 
   /**
-   * Load everything: every vault the caller holds a grant on, and its items.
+   * Load everything: every vault the caller can see, and its items.
    *
-   * The page presents one flat list, and for an internal deployment that is
-   * tens to hundreds of entries - one listing call per vault. Passwords are
-   * not part of it.
+   * One request for the lot. It used to be one per vault - and every
+   * individual password is a vault - which spent the per-computer request
+   * budget in a few page loads. Passwords are not part of it.
    */
   const load = React.useCallback(async (): Promise<void> => {
     setError(null);
 
     try {
-      const { vaults: list } = await api.listMySharedVaults();
+      const { vaults: list, items } = await api.listAllSharedItems();
       setVaults(list);
 
+      const byId = new Map(list.map((vault) => [vault.id, vault]));
       const collected: Row[] = [];
-      const failures: string[] = [];
 
-      for (const vault of list) {
-        try {
-          const result = await api.listSharedItems(vault.id, { pageSize: 100 });
-          for (const item of result.items) {
-            collected.push({
-              itemId: item.id,
-              vaultId: vault.id,
-              kind: vault.kind === VAULT_KIND.ITEM ? 'item' : 'group',
-              groupName: vault.kind === VAULT_KIND.ITEM ? null : vault.name,
-              name: item.data.name,
-              username: item.data.username ?? '',
-              uri: item.data.uris?.[0] ?? '',
-              data: item.data,
-              password: null,
-              revision: item.revision,
-              canReadSecret: vault.canReadSecrets && item.hasSecret,
-            });
-          }
-        } catch (caught) {
-          // One failing entry must not blank the rest - but it must not be
-          // silent either.
-          failures.push(`${vault.name}: ${messageOf(caught, 'could not be loaded')}`);
-        }
-      }
-
-      if (failures.length > 0) {
-        setError(
-          `${failures.length === 1 ? 'One entry' : `${failures.length} entries`} could not be loaded - ${failures.join('; ')}`,
-        );
+      for (const item of items) {
+        const vault = byId.get(item.sharedVaultId);
+        if (!vault) continue;
+        collected.push({
+          itemId: item.id,
+          vaultId: vault.id,
+          kind: vault.kind === VAULT_KIND.ITEM ? 'item' : 'group',
+          groupName: vault.kind === VAULT_KIND.ITEM ? null : vault.name,
+          name: item.data.name,
+          username: item.data.username ?? '',
+          uri: item.data.uris?.[0] ?? '',
+          data: item.data,
+          password: null,
+          revision: item.revision,
+          canReadSecret: vault.canReadSecrets && item.hasSecret,
+        });
       }
 
       collected.sort((a, b) => a.name.localeCompare(b.name));

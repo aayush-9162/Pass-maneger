@@ -702,6 +702,26 @@ export const sharedVaultRepository = {
   // Items
   // -------------------------------------------------------------------------
 
+  /** Live items across several vaults in one query: a caller's whole list. */
+  async listItemsInVaults(
+    sharedVaultIds: readonly string[],
+    executor?: SqlExecutor,
+  ): Promise<StoredSharedItem[]> {
+    if (sharedVaultIds.length === 0) return [];
+
+    const rows = await query<SharedItemRow>(
+      `SELECT ${ITEM_COLUMNS}
+         FROM shared_vault_items i
+         LEFT JOIN users ub ON ub.id = i.updated_by
+        WHERE i.deleted_at IS NULL
+          AND i.shared_vault_id IN (${sharedVaultIds.map(() => '?').join(', ')})
+        ORDER BY i.updated_at DESC, i.id ASC`,
+      [...sharedVaultIds],
+      executor,
+    );
+    return rows.map(mapSharedItemRow);
+  },
+
   async listItems(
     sharedVaultId: string,
     filter: {

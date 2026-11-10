@@ -185,6 +185,12 @@ export async function listItems(
   sendSuccess(res, await sharedVaultService.listItems(req.params.vaultId, req.query, auth));
 }
 
+/** GET /shared/items - every vault and item the caller can see, at once. */
+export async function listAllItems(req: TypedRequest, res: Response): Promise<void> {
+  const auth = requireAuth(req);
+  sendSuccess(res, await sharedVaultService.listAllItems(auth));
+}
+
 /** GET /shared/vaults/:vaultId/items/:itemId */
 export async function getItem(
   req: TypedRequest<unknown, SharedItemParamDto>,
@@ -310,6 +316,7 @@ export async function restoreItem(
 
 export const sharedVaultController = {
   listAllVaults,
+  listAllItems,
   listMyVaults,
   getVault,
   createVault,

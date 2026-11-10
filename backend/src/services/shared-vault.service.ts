@@ -479,6 +479,27 @@ export const sharedVaultService = {
     return paginated(items.map(openItem), total, page, pageSize);
   },
 
+  /**
+   * Every vault the caller can see and every live item in them, in one call.
+   *
+   * The console and the extension used to list each vault separately - one
+   * request per group, and every individual password is a vault of its own.
+   * Once administrators saw every vault, a single page load could spend most
+   * of the per-IP request budget. Same rule as `listItems`: only vaults the
+   * caller can READ.
+   */
+  async listAllItems(
+    actor: AuthContext,
+  ): Promise<{ vaults: MemberSharedVault[]; items: SharedVaultItem[] }> {
+    const vaults = await this.listForMember(actor);
+    const readable = vaults
+      .filter((vault) => hasVaultPermission(vault.permissions, VAULT_PERMISSIONS.READ))
+      .map((vault) => vault.id);
+
+    const items = await sharedVaultRepository.listItemsInVaults(readable);
+    return { vaults, items: items.map(openItem) };
+  },
+
   async getItem(vaultId: string, itemId: string, actor: AuthContext): Promise<SharedVaultItem> {
     return openItem(await this.findMemberItem(vaultId, itemId, actor, VAULT_PERMISSIONS.READ));
   },

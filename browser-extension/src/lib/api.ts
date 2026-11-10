@@ -174,19 +174,12 @@ export const extensionApi = {
       body: { credential, rememberDevice },
     }),
 
-  /** Shared vaults this user is a member of, with their rights on each. */
-  sharedVaults: (accessToken: string) =>
-    send<{ vaults: MemberSharedVault[] }>(ROUTES.SHARED.VAULTS, {
+  /** Every vault this user can see and every item in them - one request. */
+  allSharedItems: (accessToken: string) =>
+    send<{ vaults: MemberSharedVault[]; items: SharedVaultItem[] }>(ROUTES.SHARED.ITEMS, {
       method: 'GET',
       accessToken,
     }),
-
-  /** Items inside one shared vault, without their passwords. */
-  sharedItems: (accessToken: string, vaultId: string) =>
-    send<{ items: SharedVaultItem[]; total: number }>(
-      `${ROUTES.SHARED.VAULTS}/${vaultId}/items?pageSize=100`,
-      { method: 'GET', accessToken },
-    ),
 
   /** One item's password and TOTP seed. Audited by the server with `purpose`. */
   itemSecret: (accessToken: string, vaultId: string, itemId: string, purpose: SecretPurpose) =>

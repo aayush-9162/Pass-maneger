@@ -835,6 +835,10 @@ export const api = {
       { method: 'DELETE' },
     ),
 
+  /** Every vault the caller can see and every item in them, in one request. */
+  listAllSharedItems: () =>
+    request<{ vaults: MemberSharedVault[]; items: SharedVaultItem[] }>(ROUTES.SHARED.ITEMS),
+
   listSharedItems: (
     vaultId: string,
     params: AdminListParams & { type?: string; includeDeleted?: boolean } = {},

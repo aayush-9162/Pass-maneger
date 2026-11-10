@@ -52,39 +52,32 @@ export const vaultSession = {
 
   /**
    * Build the index from every vault this account can use.
-   *
-   * One vault failing to load must not blank the rest - an unlocked-but-partial
-   * list the user can work with beats an error.
    */
   async open(accessToken: string): Promise<VaultSession> {
     const index: VaultIndexEntry[] = [];
-    const { vaults } = await extensionApi.sharedVaults(accessToken);
+    // One request for everything. Listing each vault separately cost a request
+    // per group and per individual password, on every sync.
+    const { vaults, items } = await extensionApi.allSharedItems(accessToken);
+    const byId = new Map(vaults.map((vault) => [vault.id, vault]));
 
-    for (const vault of vaults) {
-      try {
-        const { items } = await extensionApi.sharedItems(accessToken, vault.id);
+    for (const item of items) {
+      const vault = byId.get(item.sharedVaultId);
+      if (!vault || item.deletedAt) continue;
 
-        for (const item of items) {
-          if (item.deletedAt) continue;
-
-          index.push({
-            id: item.id,
-            vaultId: vault.id,
-            type: item.type,
-            name: item.data.name || 'Untitled',
-            username: item.data.username ?? null,
-            uris: item.data.uris ?? [],
-            tags: item.data.tags ?? [],
-            favorite: item.favorite,
-            updatedAt: item.updatedAt,
-            // Fillable only when there is a password and the server will
-            // release it to this member.
-            hasPassword: item.hasSecret && vault.canReadSecrets,
-          });
-        }
-      } catch {
-        console.warn(`PassM: could not load shared vault ${vault.id}`);
-      }
+      index.push({
+        id: item.id,
+        vaultId: vault.id,
+        type: item.type,
+        name: item.data.name || 'Untitled',
+        username: item.data.username ?? null,
+        uris: item.data.uris ?? [],
+        tags: item.data.tags ?? [],
+        favorite: item.favorite,
+        updatedAt: item.updatedAt,
+        // Fillable only when there is a password and the server will
+        // release it to this member.
+        hasPassword: item.hasSecret && vault.canReadSecrets,
+      });
     }
 
     const { autoLockMinutes } = await readSettings();

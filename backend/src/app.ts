@@ -123,9 +123,20 @@ export function createApp(): Express {
   app.use(accessLogger);
 
   // -------------------------------------------------------------------------
-  // 7. Global rate limit, ahead of any route work.
+  // 7. Global rate limit, ahead of any route work - on the API only.
+  //
+  //    Not on the console's static files: one page load is a dozen of them,
+  //    and once the budget ran out a reload served the raw 429 JSON instead of
+  //    the app. Not on the logo relay either: a list of passwords asks for one
+  //    logo per entry, and the relay caches its answers (icons.routes.ts).
   // -------------------------------------------------------------------------
-  app.use(globalLimiter);
+  app.use(API_PREFIX, (req, res, next) => {
+    if (req.path.startsWith('/icons/')) {
+      next();
+      return;
+    }
+    globalLimiter(req, res, next);
+  });
 
   // -------------------------------------------------------------------------
   // 8. API routes, under the strict JSON-only CSP.
