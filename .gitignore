@@ -19,8 +19,8 @@ browser-extension/dist/
 # Secrets / environment - NEVER commit real secrets
 # ---------------------------------------------------------------------------
 .env
+# Includes .env.example: the templates are kept locally, not in the repository.
 .env.*
-!.env.example
 *.pem
 *.key
 *.crt
